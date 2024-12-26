@@ -1,9 +1,9 @@
 import sys
 sys.path.insert(0, "/home/syedkazim/sciebo - Kazim, Syed Muhammad (u491036@uni-siegen.de)@uni-siegen.sciebo.de/Lab/Projects/2024_Phase_Camera_FM_Design/coded_wfs_sim")
 
-from coded_wfs_sim.geometry import create_sphere
-from coded_wfs_sim.propagator import propagate_beam
-from coded_wfs_sim.visualization import visualize_field
+from coded_wfs_sim import geometry
+from coded_wfs_sim import propagator
+from coded_wfs_sim import visualization
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -20,7 +20,7 @@ print(f'''Coordiante system with size: \n
       ''')
 
 # Add geometry
-refractive_index = create_sphere(
+refractive_index = geometry.create_sphere(
     grid_shape, spatial_resolution, center=(12.5e-6, 12.5e-6, 12.5e-6), radius=5e-6, 
     n_sphere=1.5, n_background=1.0
     )
@@ -32,5 +32,5 @@ X, Y = np.meshgrid(x, y, indexing='ij')
 field = np.exp(-(X**2 + Y**2) / 0.1**2)
 
 # Propagate and visualize
-output_field = propagate_beam(field, refractive_index, wl, spatial_resolution)
-visualize_field(output_field)
+output_field = propagator.propagate_beam(field, refractive_index, wl, spatial_resolution)
+visualization.visualize_field(output_field)

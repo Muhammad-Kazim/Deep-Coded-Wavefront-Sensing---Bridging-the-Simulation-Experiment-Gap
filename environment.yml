@@ -1,0 +1,11 @@
+name: 2024_Phase_Camera_FM_Design
+channels:
+  - defaults
+dependencies:
+  - python=3.8
+  - jupyter
+  - matplotlib
+  - notebook
+  - numpy
+  - anaconda::scikit-image
+  - conda-forge::opencv
