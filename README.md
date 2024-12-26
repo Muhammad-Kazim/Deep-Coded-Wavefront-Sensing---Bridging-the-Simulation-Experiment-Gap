@@ -1,4 +1,4 @@
-# **my_package**
+# **Coded_WFS_SIM**
 
 ## **Description**
 `coded_wfs_sim` is a Python library for simulating light propagation through 3D structures using the Beam Propagation Method (BPM). It allows users to define structures like cubes, spheres, and planes with varying refractive indices and simulate light as it propagates through these geometries in three-dimensional space.
