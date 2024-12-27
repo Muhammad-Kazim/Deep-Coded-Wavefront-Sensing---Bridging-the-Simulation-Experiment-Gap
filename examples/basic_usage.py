@@ -11,19 +11,17 @@ import matplotlib.pyplot as plt
 # Grid and propagation parameters setup
 wl = 640e-9
 spatial_resolution = [100e-9, 100e-9, 100e-9] # dx, dy, dz
-grid_shape = [256, 256, 256] # x, y, z=0->
+grid_shape = [500, 500, 500] # x=0->, y=0->, z=0->
+n_background = 1. # immersion medium RI
 
-print(f'''Coordiante system with size: \n 
-      X = [0, {spatial_resolution[0]*grid_shape[0]:.2e}], Res_X = {spatial_resolution[0]}
-      Y = [0, {spatial_resolution[1]*grid_shape[1]:.2e}], Res_Y = {spatial_resolution[1]}
-      Z = [0, {spatial_resolution[2]*grid_shape[2]:.2e}], Res_Z = {spatial_resolution[2]}
-      ''')
+# Create the Geometry object with a shared grid
+geometry = geometry.Geometry(grid_shape, spatial_resolution, n_background)
 
-# Add geometry
-refractive_index = geometry.create_sphere(
-    grid_shape, spatial_resolution, center=(12.5e-6, 12.5e-6, 12.5e-6), radius=5e-6, 
-    n_sphere=1.5, n_background=1.0
-    )
+# Add shapes to the same grid
+geometry.add_sphere(center=(25e-6, 25e-6, 25e-6), radius=5e-6, RI=1.5)
+
+# Retrieve 3d RI distribution
+RI_distribution = geometry.get_grid()
 
 # Initial light field (Gaussian beam)
 x = np.linspace(0, grid_shape[0]*spatial_resolution[0], grid_shape[0])
@@ -32,5 +30,7 @@ X, Y = np.meshgrid(x, y, indexing='ij')
 field = np.exp(-(X**2 + Y**2) / 0.1**2)
 
 # Propagate and visualize
-output_field = propagator.propagate_beam(field, refractive_index, wl, spatial_resolution)
+output_field = propagator.propagate_beam(field, RI_distribution, wl, spatial_resolution)
 visualization.visualize_field(output_field)
+
+print('=====================')
