@@ -9,3 +9,4 @@ dependencies:
   - numpy
   - anaconda::scikit-image
   - conda-forge::opencv
+  - conda-forge::mayavi

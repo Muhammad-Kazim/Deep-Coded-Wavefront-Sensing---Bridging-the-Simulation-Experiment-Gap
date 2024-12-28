@@ -5,7 +5,6 @@ from coded_wfs_sim import geometry
 from coded_wfs_sim import propagator
 from coded_wfs_sim import visualization
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 # Grid and propagation parameters setup
