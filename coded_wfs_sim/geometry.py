@@ -1,6 +1,7 @@
 import numpy as np
 
 # add cuboids, hemisphere, prisms
+# handle intersecting objects
 class Geometry:
     def __init__(self, grid_shape, spatial_resolution, n_background):
         """
@@ -69,6 +70,62 @@ class Geometry:
         # Logical mask for the sphere
         sphere_mask = distance <= radius
         self.grid[sphere_mask] = RI
+        
+    def add_plane(self, point, normal, RI, thickness=None):
+        """
+        Add a thick plane to the grid. Physical coordinates.
+
+        Args:
+            point (float): point that lies on the plane.
+            normal (float): normal to the planes.
+            RI (float): RI of plane.
+            thickness (float, optional): Thickness/2 on either halfspace.
+        """
+        px, py, pz = point
+        nx, ny, nz = normal
+        
+        if thickness is None:
+            thickness = 2*self.dz
+            
+        # Plane equation: n . (x - p) = 0
+        mask = np.abs(nx * (self.x_mesh - px) + 
+                      ny * (self.y_mesh - py) + 
+                      nz * (self.z_mesh - pz)) <= thickness / 2
+        
+        self.grid[mask] = RI
+        
+    def add_obj_on_plane(self, object, center, length, RI, 
+                         plane, bias=0.):
+        """Draw shapes along a plane. Does not draw plane.
+        Adds shapes with centers along the plane, however, the cubes
+        are not parallel to the plane but to the XYZ axis. Maybe, 
+        rotation in the end required. Probably not problematic for small
+        shapes.
+
+        Args:
+            object (string): specify shape from available shapes ("cube"/"spehre").
+            center (float): center of shape in XY plane. Z is calculated.
+            length (float): side_length/radius, depeding on shape.
+            RI (float): refractive index of shape.
+            plane (list[float]): [[point], [normal]]
+            bias (float): distance along -Z from center.
+        """
+        
+        plane_pnt = plane[0]
+        plane_normal = plane[1]
+
+        cnt_x, cnt_y = center
+        cnt_z = -1*(plane_normal[0]*(cnt_x - plane_pnt[0]) + 
+                plane_normal[1]*(cnt_y - plane_pnt[1]) - 
+                plane_normal[2]*plane_pnt[2])/plane_normal[2]
+        cnt_z -= bias
+        
+        if object == 'cube':
+            self.add_cube(center=(cnt_x, cnt_y, cnt_z), side_length=length, RI=RI)
+        elif object == 'sphere':
+            self.add_sphere(center=(cnt_x, cnt_y, cnt_z), radius=length, RI=RI)
+        else:
+            raise TypeError(f'Object {object} not available.')
 
     def get_grid(self):
         """

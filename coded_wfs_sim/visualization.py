@@ -89,7 +89,7 @@ def visualize_grid(RI_distribution, n_background=1., factor=10):
     plt.show()
 
 def visualize_field(field, support, title="Field Intensity", units=1e-6):
-    plt.imshow(np.abs(field)**2, cmap='inferno', extent=[0, support[0]/units, 0, support[1]/units])
+    plt.imshow(np.abs(field)**2, cmap='gray', extent=[0, support[0]/units, 0, support[1]/units])
     plt.colorbar()
     plt.title(title)
     if units == 1e-6:
