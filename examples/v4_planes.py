@@ -40,7 +40,7 @@ visualization.visualize_grid_vol(RI_distribution, n_background=n_background, fac
 field = np.ones([grid_shape[0], grid_shape[1]])
 
 # Propagate and visualize
-output_field = propagator.propagate_beam(field, RI_distribution, wl, spatial_resolution)
+output_field = propagator.propagate_beam_2(field, RI_distribution, n_background, wl, spatial_resolution)
 visualization.visualize_field(output_field, spatial_support)
 
 print('=====================')
