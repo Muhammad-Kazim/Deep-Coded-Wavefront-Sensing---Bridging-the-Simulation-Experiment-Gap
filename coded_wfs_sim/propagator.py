@@ -90,7 +90,7 @@ def propagate(field, wavelength, spatial_resolution, dist):
     Kz = np.sqrt(0j + k0**2 - Kx**2 - Ky**2)
     
     field_fft = np.fft.fft2(field)
-    transfer_function = np.exp(1j*Kz*dist)
+    transfer_function = np.conjugate(np.exp(1j*Kz*dist))
     field = np.fft.ifft2(field_fft * transfer_function)
 
     return field

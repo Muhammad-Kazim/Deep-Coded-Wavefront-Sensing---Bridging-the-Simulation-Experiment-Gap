@@ -1,4 +1,7 @@
 import numpy as np
+import pickle
+import os
+
 
 # add cuboids, hemisphere, prisms
 # handle intersecting objects
@@ -126,9 +129,48 @@ class Geometry:
             self.add_sphere(center=(cnt_x, cnt_y, cnt_z), radius=length, RI=RI)
         else:
             raise TypeError(f'Object {object} not available.')
+        
+    def __add__(self, obj):
+        """Concatenates the populated grid of two Geometry class objects.
+
+        Args:
+            obj (geometry)
+            return: a new geometry object.
+        """
+        
+        if not isinstance(obj, Geometry):
+            raise TypeError(f"Cannot add Geometry with {type(obj)}.")
+        
+        print(type(obj))
+        
+    def save(self, filename):
+        """Saves instance as a .pkl file.
+
+        Args:
+            filename (str): path/to/file.pkl
+        """
+        
+        if os.path.isfile(filename):
+            print('File exists.')
+        else:
+            print('Saving geometry object...')
+            
+            with open(filename, 'wb') as outp:
+                pickle.dump(self, outp, -1)
+        
 
     def get_grid(self):
         """
         Return the current grid with all shapes added.
         """
         return self.grid
+    
+    def __repr__(self):
+        
+        return f'''Coordiante system with size: \n 
+              X = [0, {self.dx*self.nx:.2e}], Res_X = {self.dx}
+              Y = [0, {self.dy*self.ny:.2e}], Res_Y = {self.dy}
+              Z = [0, {self.dz*self.nz:.2e}], Res_Z = {self.dz}
+              Immersion RI: {self.n_0}
+              '''
+        
