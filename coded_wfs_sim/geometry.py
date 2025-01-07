@@ -6,7 +6,7 @@ import os
 # add cuboids, hemisphere, prisms
 # handle intersecting objects
 class Geometry:
-    def __init__(self, grid_shape, spatial_resolution, n_background):
+    def __init__(self, grid_shape, spatial_resolution, n_background, grid=None):
         """
         Initialize a single grid with background refractive index.
         
@@ -27,7 +27,11 @@ class Geometry:
         self.n_0 = n_background
 
         # Initialize the grid and meshgrid
-        self.grid = np.ones([self.nx, self.ny, self.nz])*self.n_0
+        if grid is None:
+            self.grid = np.ones([self.nx, self.ny, self.nz])*self.n_0
+        else:
+            assert [grid.shape[0], grid.shape[1], grid.shape[2]] == [self.nx, self.ny, self.nz], "[nx, ny, nx] not same as grid's shape."
+            self.grid = grid
 
         x = np.arange(self.nx) * self.dx
         y = np.arange(self.ny) * self.dy
@@ -141,7 +145,18 @@ class Geometry:
         if not isinstance(obj, Geometry):
             raise TypeError(f"Cannot add Geometry with {type(obj)}.")
         
-        print(type(obj))
+        self_attr = [self.dx, self.dy, self.dz, self.nx, self.ny, self.n_0]
+        obj_attr = [obj.dx, obj.dy, obj.dz, obj.nx, obj.ny, obj.n_0]
+        
+        if self_attr == obj_attr:
+            return Geometry(
+                [self.nx, self.ny, self.nz + obj.nz], 
+                [self.dx, self.dy, self.dz], self.n_0, 
+                np.concatenate([self.get_grid(), obj.get_grid()], axis=2)
+                ) 
+        else:
+            raise AssertionError('Objects have different attributes.')
+        
         
     def save(self, filename):
         """Saves instance as a .pkl file.

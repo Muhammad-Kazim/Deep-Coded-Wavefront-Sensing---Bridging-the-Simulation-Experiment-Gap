@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.fftpack import fft2, ifft2
+
 
 # class
 # propgate through medium from one plane to another

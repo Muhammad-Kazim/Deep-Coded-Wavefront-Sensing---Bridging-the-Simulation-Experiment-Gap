@@ -4,45 +4,27 @@ sys.path.insert(0, "/home/syedkazim/sciebo - Kazim, Syed Muhammad (u491036@uni-s
 from coded_wfs_sim import geometry
 from coded_wfs_sim import propagator
 from coded_wfs_sim import visualization
+from coded_wfs_sim import utils
 import numpy as np
-import scipy
-from tifffile import tifffile
 
 
-## reference speckle pattern
+### adding two geometry objects.
 
-load_grid = scipy.io.loadmat('v1_diffuser.mat')
+# loading geom
+geom1 = utils.load_pkl('examples/data/geometry/v1_test_geom.pkl')
+print(f"Loaded object 1: {geom1}")
+visualization.visualize_grid_vol(geom1.get_grid(), n_background=geom1.n_0, factor=2)
 
-# Grid and propagation parameters setup
-diffuser_RI_distribution = load_grid['RI_distribution']
-wl = load_grid['wavelength']
-spatial_resolution = list(load_grid['spatial_resolution'][0]) # dx, dy, dz
-grid_shape = diffuser_RI_distribution.shape # x=0->, y=0->, z=0->
-n_background = load_grid['RI_background'] # immersion medium RI
-plane_position_z = list(load_grid['plane_point'][0])[-1]
+geom2 = utils.load_pkl('examples/data/geometry/v2_test_geom.pkl')
+print(f"Loaded object 2: {geom2}")
+visualization.visualize_grid_vol(geom2.get_grid(), n_background=geom2.n_0, factor=2)
 
+geom3 = geom1 + geom1
+print(f"Object 3: {geom3}")
+visualization.visualize_grid_vol(geom3.get_grid()[:, :, ::2], n_background=geom3.n_0, factor=2)
 
-spatial_support = [spatial_resolution[i]*grid_shape[i] for i in range(3)]
-
-diffuser_RI_distribution = diffuser_RI_distribution[:, :, 150:300]
-spatial_resolution[-1] = spatial_resolution[-1]
-
-# visualization
-visualization.visualize_grid_vol(diffuser_RI_distribution, n_background=n_background, factor=2)
-
-# Initial light field
-field = np.ones([grid_shape[0], grid_shape[1]])*100
-
-# Propagate and visualize
-ref_field = propagator.propagate_beam_2(field, diffuser_RI_distribution, n_background, wl, spatial_resolution)
-tifffile.imwrite('ref_speckle.tif', np.abs(ref_field)**2)
-
-visualization.visualize_field(ref_field, spatial_support)
-
-print('=====================')
-
-
-## bead speckle pattern
-
+# outputs error
+geom3 = geom1 + geom2
+print(geom3)
 
 print('=====================')
