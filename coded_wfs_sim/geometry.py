@@ -145,8 +145,8 @@ class Geometry:
         if not isinstance(obj, Geometry):
             raise TypeError(f"Cannot add Geometry with {type(obj)}.")
         
-        self_attr = [self.dx, self.dy, self.dz, self.nx, self.ny, self.n_0]
-        obj_attr = [obj.dx, obj.dy, obj.dz, obj.nx, obj.ny, obj.n_0]
+        self_attr = [self.dx, self.dy, self.dz, self.nx, self.ny]
+        obj_attr = [obj.dx, obj.dy, obj.dz, obj.nx, obj.ny]
         
         if self_attr == obj_attr:
             return Geometry(
