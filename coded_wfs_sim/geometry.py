@@ -134,6 +134,39 @@ class Geometry:
         else:
             raise TypeError(f'Object {object} not available.')
         
+    def unifrom_plane_sampling_positions(self, size, prob=0.5):
+        """Finds positions on a plane where to place structure probabilistically.
+
+        Args:
+            size (float_): side length of a square.
+            prob (float, optional): probability of structure at a location. Defaults to 0.5.
+
+        Returns:
+            array: samping positions (x,y).
+        """
+        
+        spatial_support = [self.dx*self.nx, self.dy*self.ny]
+        x_num, y_num = int(spatial_support[0]/size), int(spatial_support[1]/size)
+        samples_mask = np.random.uniform(size=x_num*y_num) > prob
+        
+        # strucutres size-distance away from boundary
+        samples_mask = samples_mask.reshape(x_num, y_num)
+        samples_mask[0, :] = 0.
+        samples_mask[-1, :] = 0.
+        samples_mask[:, 0] = 0.
+        samples_mask[:, -1] = 0.
+        
+        x_cords = np.linspace(0, spatial_support[0], x_num, endpoint=False) + spatial_support[0]/(2*x_num)
+        y_cords = np.linspace(0, spatial_support[1], y_num, endpoint=False) + spatial_support[1]/(2*y_num)
+        
+        xx, yy = np.meshgrid(x_cords, y_cords, indexing='ij')
+        xy = np.hstack([xx.reshape(-1, 1), yy.reshape(-1, 1)])
+        
+        sampling_pos = xy*samples_mask.reshape(-1, 1)
+        
+        
+        return sampling_pos[~np.all(sampling_pos == 0., axis=1)]
+        
     def __add__(self, obj):
         """Concatenates the populated grid of two Geometry class objects.
 
