@@ -221,4 +221,45 @@ class Geometry:
               Z = [0, {self.dz*self.nz:.2e}], Res_Z = {self.dz}
               Immersion RI: {self.n_0}
               '''
+
+# when not using BPM, Geom is not required
+# find sampling positions using:
+def initialize_hmap_uniform_sampling(num_pixels, tile_size, height, prob=0.5):
+    """Finds positions on a plane where to place structure probabilistically.
+    Use to initilize phase mask.
+
+    Args:
+        num_pixels ([int, int]): [nx, ny].
+        tile_size (int): num of pixels in one tile along one dim.
+        height (float): scalar.
+        prob (float, optional): probability of structure at a location. Defaults to 0.5.
         
+    Returns:
+        array: samping positions (x,y).
+    """
+    
+    nx, ny = num_pixels[0]//tile_size, num_pixels[1]//tile_size
+    samples_mask = np.random.uniform(size=nx*ny) > prob
+    
+    # strucutres size-distance away from boundary
+    samples_mask = samples_mask.reshape(nx, nx)
+    samples_mask[0, :] = 0.
+    samples_mask[-1, :] = 0.
+    samples_mask[:, 0] = 0.
+    samples_mask[:, -1] = 0.
+    
+    height_map = height*np.repeat(np.repeat(samples_mask, tile_size, axis=0), tile_size, axis=1)
+    
+    # can also produce an RI map for a inhomogenous phase mask
+    return height_map
+
+# Produce mask height at positons using:
+def phase_mask_height(pos, height, num_pixels):
+    
+    nx, ny = pos.shape[0], pos.shape[1]
+    height_map = np.ones([nx, ny], dtype=np.float64)
+    
+    if np.isscalar(height):
+        height_map = pos*height
+    else:
+        pass
