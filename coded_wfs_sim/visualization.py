@@ -102,3 +102,7 @@ def visualize_field(field, support, title="Field Intensity", units=1e-6):
         plt.xlabel('X (m)')
         plt.ylabel('Y (m)')
     plt.show()
+
+
+if __name__=='__main__':
+    pass

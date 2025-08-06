@@ -40,7 +40,7 @@ def propagate_beam_2(field, RI_distribution, RI_background, wavelength, spatial_
     Propagates the beam field using BPM.
     field: Input 2D complex field (x, y)
     refractive_index: Refractive index distribution
-    wavelength: Wavelength of the light
+    wavelength: Wavelength of light
     d: [dx, dy, Propagation step]
     """
     if padding:
@@ -79,7 +79,7 @@ def propagate_beam_2(field, RI_distribution, RI_background, wavelength, spatial_
     return field
 
 
-def propagate(field, wavelength, spatial_resolution, dist, padding=None):
+def propagate(field, wavelength, spatial_resolution, dist, padding=None, direction='forward', bandlimited=False):
     """Propagation through a homogenous medium
 
     Args:
@@ -105,12 +105,30 @@ def propagate(field, wavelength, spatial_resolution, dist, padding=None):
     ky = np.fft.fftfreq(Ny, dy) * 2 * np.pi
     Kx, Ky = np.meshgrid(kx, ky, indexing='ij')
     
-    Kz = np.sqrt(0j + k0**2 - Kx**2 - Ky**2)
-    
-    # print(field.dtype)
+    Kz = 0j + k0**2 - Kx**2 - Ky**2
+    if not np.all(Kz > 0):
+        Kz[Kz < 0] = 0
 
+    Kz = np.sqrt(Kz)
+    
     field_fft = np.fft.fft2(field)
-    transfer_function = np.exp(1j*Kz*dist)
+    if direction == 'backward':
+        transfer_function = np.conj(np.exp(1j*Kz*dist))
+    else:
+        transfer_function = np.exp(1j*Kz*dist)
+    
+    if bandlimited:
+        # max freq to prevent aliasing by the transfer function
+        delU, delV = 1/(Nx*dx)*2*np.pi, 1/(Ny*dy)*2*np.pi
+        uLimit = 1/(np.sqrt((2*delU*dist)**2 + 1)* wavelength)
+        vLimit = 1/(np.sqrt((2*delV*dist)**2 + 1)* wavelength)
+
+        # limiting frequencies above uLimit and vLimit of the transfer function
+        mask = np.ones_like(transfer_function)
+        mask[np.logical_or(np.abs(Kx) > int(uLimit), np.abs(Ky) >= int(vLimit))] = 0
+
+        transfer_function = mask*transfer_function 
+        
     field = np.fft.ifft2(field_fft * transfer_function)
     
     if padding:
@@ -239,3 +257,7 @@ class Wave2d:
         """
 
         pass
+    
+
+if __name__=='__main__':
+    pass

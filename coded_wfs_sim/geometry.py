@@ -213,6 +213,12 @@ class Geometry:
         """
         return self.grid
     
+    def reset_grid(self):
+        """
+        Return the current grid with all shapes added.
+        """
+        self.grid = np.ones_like(self.grid)*self.n_0
+    
     def __repr__(self):
         
         return f'''Coordiante system with size: \n 
@@ -263,3 +269,42 @@ def phase_mask_height(pos, height, num_pixels):
         height_map = pos*height
     else:
         pass
+    
+    
+def generate_bead_data(geom, c_m, c_v, rad_params, RI_params, num_elements):
+    """
+    Generates several beads with varying RI and radii and populates a given 3d grid
+    
+    Args:
+        geom (object): 3d grid geometry object
+        c_m (list): means of distribution to samples centers 
+        c_v (list): vaiances of distribution to samples centers
+        rad_params (list): mean and variance of radius distribution (output in micrometers)
+        RI_params (list): mean and variance of radius distribution
+        num_elements (int): creates that many beads
+    
+    Returns: geom with populated grid. Use geom.get_grid() to retrieve 3d array
+         
+    """
+    
+    spatial_support = [geom.dx*geom.nx, geom.dy*geom.ny, geom.dz*geom.nz]
+    for _ in range(num_elements):
+        cx = c_m[0] + c_v[0] * np.random.randn()
+        cy = c_m[1] + c_v[1] * np.random.randn()
+        cz = c_m[2] + c_v[2] * np.random.randn()
+        
+        rad = np.random.uniform(rad_params[0], rad_params[1]) * rad_params[2]
+        RI = RI_params[0] + RI_params[1] * np.random.randn()
+        
+        check_extent = (cx - rad > 0.) * (cx + rad < spatial_support[0]) * (cy - rad > 0.) * (cy + rad < spatial_support[1]) * (cz - rad > 0.) * (cz + rad < spatial_support[2])
+
+        if check_extent:
+            geom.add_sphere(center=(cx, cy, cz), radius=rad, RI=RI)
+            # print(rad, RI)
+
+
+    return geom
+
+
+if __name__=='__main__':
+    pass
