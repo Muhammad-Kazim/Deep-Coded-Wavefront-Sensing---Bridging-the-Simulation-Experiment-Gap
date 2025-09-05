@@ -6,3 +6,7 @@ examples/v9/
 examples/v10/
 examples/v14/
 examples/runs/
+examples/neurips_figure/beads_tomog/
+examples/neurips_figure/beads_tomog_2/
+examples/neurips_figure/data_coded_wfs_spatial_filt_tiff_resized_RI/
+examples/neurips_figure/data_coded_wfs_tiff_smooth_resized/

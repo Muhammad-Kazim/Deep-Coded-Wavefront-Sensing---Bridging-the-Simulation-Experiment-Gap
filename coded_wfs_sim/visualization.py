@@ -103,6 +103,29 @@ def visualize_field(field, support, title="Field Intensity", units=1e-6):
         plt.ylabel('Y (m)')
     plt.show()
 
+def visualize_complex_field(field, support, title="Complex Wavefield", units=1e-6):
+    
+    fig, axs = plt.subplots(1, 2, figsize=(15, 4))
+    
+    cm0 = axs[0].imshow(np.abs(field)**2, cmap='gray', extent=[0, support[0]/units, 0, support[1]/units])
+    cm1 = axs[1].imshow(np.angle(field), cmap='gray', extent=[0, support[0]/units, 0, support[1]/units])
+    
+    plt.colorbar(cm0, ax=axs[0])
+    plt.colorbar(cm1, ax=axs[1])
+    
+    plt.suptitle(title)
+    
+    if units == 1e-6:
+        plt.xlabel('X (um)')
+        plt.ylabel('Y (um)')
+    elif units == 1e-3:
+        plt.xlabel('X (mm)')
+        plt.ylabel('Y (mm)')
+    else:
+        plt.xlabel('X (m)')
+        plt.ylabel('Y (m)')
+    plt.show()
+
 
 if __name__=='__main__':
     pass

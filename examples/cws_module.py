@@ -32,7 +32,7 @@ class CWS():
                         [1, -4, 1],
                         [0, 1, 0]])
 
-    def run(self, I0_path, I1_path, prior=None, iter=None):
+    def run(self, I0_path, I1_path, prior=None, iter=None, tol=0.05):
         
         if type(I0_path) != np.ndarray:
             I0 = tifffile.imread(I0_path).astype(np.float64)[..., 0] # reference image
@@ -46,7 +46,7 @@ class CWS():
             'priors': prior if prior is not None else [0.1, 0.1, 100, 5],
             'iter': iter if iter is not None else [10, 5, 10],
             'mu': [0.1, 100],
-            'tol': 0.05,
+            'tol': tol,
             'L': np.array([(2**(np.ceil(np.log2(I0.shape))) - I0.shape)/2, [256, 256]]).min(axis=0).astype('int'),
             'verbose': [0, 0]
             }

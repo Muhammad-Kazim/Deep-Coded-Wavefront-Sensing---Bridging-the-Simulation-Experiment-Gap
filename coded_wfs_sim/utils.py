@@ -1,5 +1,6 @@
 import pickle
 import os
+import sys
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.signal import convolve2d as convolve
@@ -48,7 +49,7 @@ def normalization(field, totype='int16'):
         
 
 def low_pass_filter_NA(wavefield, wl, spatial_resolution, NA):
-    fmax = NA/wl/2
+    fmax = NA/wl
     dx, dy = spatial_resolution[:2]
     
     kx = np.fft.fftfreq(wavefield.shape[0], dx)
@@ -204,6 +205,14 @@ def poisson_solver(gx, gy):
     
     return rec
 
+class HiddenPrints:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout
 
 if __name__=='__main__':
     pass
