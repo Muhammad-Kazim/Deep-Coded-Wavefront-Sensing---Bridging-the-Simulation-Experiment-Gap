@@ -30,6 +30,7 @@ S. M. Kazim, P. Müller, and I. Ihrke
 NeurIPS 2025 Workshop: *Learning to Sense*
 
 📎 [Read the paper](https://openreview.net/pdf?id=4dQlpj6LHc)
+📎 [Read the blogpost](https://muhammad-kazim.github.io/publication/2025-09-Deep-Coded-Wavefront-Sensing-Bridging-the-Simulation-Experiment-Gap)
 
 ---
 
