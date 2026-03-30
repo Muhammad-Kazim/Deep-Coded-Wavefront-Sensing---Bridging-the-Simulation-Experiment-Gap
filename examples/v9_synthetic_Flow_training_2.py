@@ -20,7 +20,7 @@ import torchvision.transforms.functional as F
 from torchvision.utils import flow_to_image
 from torch.utils.tensorboard import SummaryWriter
 
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import gaussian_filter, median_filter
 # from scipy.signal import correlate2d, convolve2d, tukey
 # from scipy.interpolate import RegularGridInterpolator
 
@@ -68,8 +68,10 @@ def generate_ref_obj_wavefields_from_vol_v2(RI_distribution, phase_mask, dist_m_
     
     # calculate ground truth flow
     flow_y, flow_x = utils.grad_optr(np.angle(output_field))
-    gt_flow_y = (np.remainder(flow_y + np.pi, 2*np.pi) - np.pi)/((spatial_resolution[0]*im_to_ob_space_scale)**2)/k*(dist_m_im + dist_m_im_var)
-    gt_flow_x = (np.remainder(flow_x + np.pi, 2*np.pi) - np.pi)/(spatial_resolution[1]*im_to_ob_space_scale)**2/k*(dist_m_im + dist_m_im_var)
+    # gt_flow_y = (np.remainder(flow_y + np.pi, 2*np.pi) - np.pi)/((spatial_resolution[0]*im_to_ob_space_scale)**2)/k*(dist_m_im + dist_m_im_var)
+    # gt_flow_x = (np.remainder(flow_x + np.pi, 2*np.pi) - np.pi)/(spatial_resolution[1]*im_to_ob_space_scale)**2/k*(dist_m_im + dist_m_im_var)
+    gt_flow_y = median_filter(flow_y, 3)/((spatial_resolution[0]*im_to_ob_space_scale)**2)/k*(dist_m_im + dist_m_im_var)
+    gt_flow_x = median_filter(flow_x, 3)/(spatial_resolution[1]*im_to_ob_space_scale)**2/k*(dist_m_im + dist_m_im_var)
 
     # mask modulation and prop to image plane [1:-1, 1:-1]
     output_field_sensor = propagator.propagate(output_field*phase_mask, wl, np.array(spatial_resolution)*im_to_ob_space_scale, dist_m_im + dist_m_im_var, padding=padding, direction='forward')
@@ -110,6 +112,7 @@ def generate_ref_obj_wavefields(RI_distribution, phase_mask, dist_m_im, dist_m_i
     flow_y, flow_x = utils.grad_optr(np.angle(output_field))
     gt_flow_y = (np.remainder(flow_y + np.pi, 2*np.pi) - np.pi)/(spatial_resolution[0]*mag)**2/k*(dist_m_im + dist_m_im_var)
     gt_flow_x = (np.remainder(flow_x + np.pi, 2*np.pi) - np.pi)/(spatial_resolution[1]*mag)**2/k*(dist_m_im + dist_m_im_var)
+    
     
     # mask modulation and prop to image plane
     output_field = propagator.propagate(output_field*phase_mask, wl, np.array(spatial_resolution)*mag, dist_m_im + dist_m_im_var, 
@@ -168,10 +171,11 @@ if __name__=='__main__':
 
     parser.add_argument("--name", type=str, help='project/run/date/name', required=True)
     
+    parser.add_argument("--psd", type=str, help='presampled data path or no', default='no')
     parser.add_argument("--ckpt_load", type=str, help='relative skpt path or no', default='no')
     parser.add_argument("--ckpt_save",  choices=['yes', 'no'], default='no')
     parser.add_argument("--data_save",  choices=['yes', 'no'], default='no')
-    
+
     parser.add_argument("--loss",  choices=['l1', 'l2'], default='l2')
     
     parser.add_argument('--epochs', type=int, help='total epochs', required=True)
@@ -180,6 +184,8 @@ if __name__=='__main__':
     parser.add_argument('--lr', type=float, help='learning rate', default=0.0001)
 
     args = parser.parse_args()
+    
+    np.random.seed(0)
     
     # initializations
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -256,8 +262,13 @@ if __name__=='__main__':
     img1_batch_val, img2_batch_val = utils.preprocess(ref_val, obj_val, transforms)
     # img1_batch_val, img2_batch_val = img1_batch_val.to(device), img2_batch_val.to(device)
     
+    if args.psd != 'no':
+        print('Loading data list')
+        data_list = os.listdir(f'{args.psd}/obj')
     for it1 in range(epochs):
         
+        if args.psd != 'no':
+            np.random.shuffle(data_list)
         # generate phase mask
         phase_mask = create_phase_mask([2, 4], np.array(grid_shape)*mag2, tile_size, wl, RI_pm, 
                                 smoothing=pm_smoothing, padding=1)[:-1, :-1]
@@ -270,32 +281,45 @@ if __name__=='__main__':
         # s_crop_dims = np.random.randint(400, high=475, size=2)
         for it2 in range(update_wegiths_iter):
             
-            # generate data 3D tensor
-            num_elements = np.random.randint(1, 6)
-            print(f'{it1}:{it2}-{num_elements}')
+            if args.psd == 'no':
+                # generate data 3D tensor
+                num_elements = np.random.randint(1, 6)
+                print(f'{it1}:{it2}-{num_elements}')
             
-            RI_distribution_1 = geometry.generate_bead_data(geom, c_m, c_v, rad_params, RI_params, num_elements).get_grid()
-            geom.reset_grid()
+                RI_distribution_1 = geometry.generate_bead_data(geom, c_m, c_v, rad_params, RI_params, num_elements).get_grid()
+                geom.reset_grid()
             
-            # generate NN input and label
-            dist_m_im_var = np.random.rand()*2e-3 - 0.5e-3
-            f_plane_delta = np.random.randn()*4e-6
+                # generate NN input and label
+                dist_m_im_var = np.random.rand()*2e-3 - 0.5e-3
+                f_plane_delta = np.random.randn()*4e-6
             
-            ref_wave, obj_wave, gt_flow = generate_ref_obj_wavefields_from_vol_v2(RI_distribution_1, phase_mask, dist_m_im, dist_m_im_var, 
+                ref_wave, obj_wave, gt_flow = generate_ref_obj_wavefields_from_vol_v2(RI_distribution_1, phase_mask, dist_m_im, dist_m_im_var, 
                                             wl, n_background, spatial_resolution, spatial_support, 
                                             mag=mag, focal_plan_var=f_plane_delta, padding=pad, NA=NA,
                                             partial_coherence_smoothing=partial_coherence_smoothing, 
                                             im_to_ob_space_scale=im_to_ob_space_scale)
             
-            img_ref = torch.clamp(torch.abs(torch.tensor(ref_wave[::2, ::2]))**2 + int_gaus_noise*torch.randn(495, 495), min=0).float()
-            img_obj = torch.clamp(torch.abs(torch.tensor(obj_wave[::2, ::2]))**2 + int_gaus_noise*torch.randn(495, 495), min=0).float()
+                img_ref = torch.clamp(torch.abs(torch.tensor(ref_wave[::2, ::2]))**2 + int_gaus_noise*torch.randn(495, 495), min=0).float()
+                img_obj = torch.clamp(torch.abs(torch.tensor(obj_wave[::2, ::2]))**2 + int_gaus_noise*torch.randn(495, 495), min=0).float()
+                gt_flows.append([gt_flow[0][::2, ::2], gt_flow[1][::2, ::2]])
+            
+            else:
+                img_ref = tifffile.imread(f'{args.psd}/ref/{data_list[it2]}')/10e3
+                img_obj = tifffile.imread(f'{args.psd}/obj/{data_list[it2]}')/10e3
+                gt_flow0 = tifffile.imread(f'{args.psd}/grad/{data_list[it2][:-5]}_0.tiff')
+                gt_flow1 = tifffile.imread(f'{args.psd}/grad/{data_list[it2][:-5]}_1.tiff')
+                
+                img_ref = torch.clamp(torch.tensor(img_ref) + int_gaus_noise*torch.randn(495, 495), min=0).float()
+                img_obj = torch.clamp(torch.tensor(img_obj) + int_gaus_noise*torch.randn(495, 495), min=0).float()
+                
+                gt_flows.append([gt_flow0/65000*64 - 32, gt_flow1/65000*64 - 32])
             
             # img_ref = F.center_crop(img_ref, (s_crop_dims[0], s_crop_dims[1]))
             # img_obj = F.center_crop(img_obj, (s_crop_dims[0], s_crop_dims[1]))
             
             ref_imgs.append(img_ref/torch.mean(img_ref))
             obj_imgs.append(img_obj/torch.mean(img_obj))    
-            gt_flows.append([gt_flow[0][::2, ::2], gt_flow[1][::2, ::2]])
+            #gt_flows.append([gt_flow[0][::2, ::2], gt_flow[1][::2, ::2]])
             
             if args.data_save == 'yes':
                 if not os.path.exists(f'runs/{date}/data/obj'):
@@ -334,7 +358,7 @@ if __name__=='__main__':
         loss.backward()
         optimizer.step()
         
-        if it1 %  10 == 0:
+        if it1 %  50 == 0:
             flow_imgs = flow_to_image(list_of_flows[-1].detach().cpu())
             flow_targets = flow_to_image(targets.detach().cpu())
             grid = np.hstack([np.concatenate([img1, flow_img], axis=2) for (img1, flow_img) in zip(flow_targets, flow_imgs)])

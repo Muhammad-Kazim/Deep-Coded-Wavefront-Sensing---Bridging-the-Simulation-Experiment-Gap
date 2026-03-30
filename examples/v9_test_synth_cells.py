@@ -97,8 +97,10 @@ def generate_ref_obj_wavefields_HEK_cells(synth_cell, phase_mask, dist_m_im, dis
     
     # ground truth flow
     flow_y, flow_x = utils.grad_optr(np.angle(output_field))
-    gt_flow_y = (np.remainder(flow_y + np.pi, 2*np.pi) - np.pi)
-    gt_flow_x = (np.remainder(flow_x + np.pi, 2*np.pi) - np.pi)
+    # gt_flow_y = (np.remainder(flow_y + np.pi, 2*np.pi) - np.pi)
+    # gt_flow_x = (np.remainder(flow_x + np.pi, 2*np.pi) - np.pi)
+    gt_flow_y = median_filter(flow_y, 3)
+    gt_flow_x = median_filter(flow_x, 3)
     
     # aerial to sensor flow
     conv_opt = np.ones([conv_opt_dx, conv_opt_dx])
@@ -171,7 +173,7 @@ if __name__=='__main__':
     
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--ckpt_load", type=str, help='relative skpt path', required=True)
+    parser.add_argument("--ckpt_load", type=str, help='relative skpt path or no for pretrained model', required=True)
     parser.add_argument("--data_save",  choices=['yes', 'no'], default='no')
 
     parser.add_argument('--samples', type=int, help='total epochs', required=True)
@@ -226,9 +228,11 @@ if __name__=='__main__':
     int_gaus_noise = 2e-3
     
     transforms = utils.OpticalFlowTransformRAFT()
-    wc_reconstructor = cws_module.CWS()
     
-    losses_wc = []
+    if args.ckpt_load != 'no':
+        wc_reconstructor = cws_module.CWS()
+        losses_wc = []
+    
     losses_NN = []
     # runs/dd_mm/model_data_v
     date = f'{datetime.today()}'.split()[0]
@@ -256,20 +260,22 @@ if __name__=='__main__':
             predicted_flows = F.resize(list_of_flows[-1].detach().cpu(), size=(img_obj.shape))
             opd_NN = -1*utils.int_2d_fourier([predicted_flows[0, 0], predicted_flows[0, 1]], (6e-6)**2/(dist_m_im+dist_m_im_var))/(2*np.pi)
             
-            _, _, loss_wc = wc_reconstructor.run(10000*np.array(img_ref).astype(np.float64), 
+            if args.ckpt_load != 'no':
+                _, _, loss_wc = wc_reconstructor.run(10000*np.array(img_ref).astype(np.float64), 
                     10000*np.array(img_obj).astype(np.float64), 
                     prior=args.prior if args.prior is not None else [100, 1000, 100, 5], 
                     iter=args.iter if args.iter is not None else [15, 10, 10], tol=1e-4)
-            _, opd_wc = wc_reconstructor.get_field(pixel_size=6e-6, z=dist_m_im+dist_m_im_var, RI=2.)
+                _, opd_wc = wc_reconstructor.get_field(pixel_size=6e-6, z=dist_m_im+dist_m_im_var, RI=2.)
             # opd_wc = -1*opd_wc
             
             gt = 1*(6e-6)**2/(dist_m_im+dist_m_im_var)*utils.int_2d_fourier(gt_flow, 1)/(2*np.pi)
             
-            losses_wc.append(np.linalg.norm(gt*1e6 - opd_wc*1e6))
+            if args.ckpt_load != 'no':
+                losses_wc.append(np.linalg.norm(gt*1e6 - opd_wc*1e6))
             losses_NN.append(np.linalg.norm(gt*1e6 - opd_NN*1e6))
             
             if args.data_save == 'yes':
-                ckpt_name = f"{ckpt[5:-4].replace('/', '_')}_ds_synth_cell"
+                ckpt_name = f"{ckpt[5:-4].replace('/', '_')}_ds_synth_cell_seed{args.seed}_grad_median"
                 if not os.path.exists(f'runs/test/{ckpt_name}/data'):
                     os.makedirs(f'runs/test/{ckpt_name}/data')
                     
@@ -284,10 +290,21 @@ if __name__=='__main__':
             del img1_batch, img2_batch, list_of_flows
             torch.cuda.empty_cache()
 
-        
-    plt.plot(losses_wc, 'r*', label='CCWFS')
+    
+    if args.ckpt_load != 'no':
+        plt.plot(losses_wc, 'r*', label='CCWFS')
     plt.plot(losses_NN, 'b*', label='DCWFS')
-    plt.title(f'RAFT:{np.array(losses_NN).mean()/opd_NN.size:4f}um, WC:{np.array(losses_wc).mean()/opd_wc.size:4f}um')
-    plt.savefig(f'runs/test/{ckpt_name}/data/loss.png', pad_inches=0, bbox_inches='tight')
+    
+    if args.ckpt_load != 'no':
+        plt.title(f'RAFT:{np.array(losses_NN).mean()/opd_NN.size:4f}um, WC:{np.array(losses_wc).mean()/opd_wc.size:4f}um')
+        plt.ylim(0, 25)
+        plt.savefig(f'runs/test/{ckpt_name}/data/loss.png', pad_inches=0, bbox_inches='tight')
+    else:
+        ckpt_name = f"Pretrained_RAFT_ds_synth_cells_seed{args.seed}_grad_median"
+        if not os.path.exists(f'runs/test/{ckpt_name}/data'):
+            os.makedirs(f'runs/test/{ckpt_name}/data')
+        plt.title(f'Pretrained RAFT- Test DS: SynthCells:{np.array(losses_NN).mean()/opd_NN.size:4f}um')
+        plt.ylim(0, 25)
+        plt.savefig(f'runs/test/{ckpt_name}/data/loss.png', pad_inches=0, bbox_inches='tight')
 
 plt.legend()
