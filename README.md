@@ -1,8 +1,4 @@
-# Deep Coded Wavefront Sensing (Deep CWFS)
-
-**Bridging the Simulation–Experiment Gap**
-
-📄 *NeurIPS 2025 Workshop on Learning to Sense (Proceedings Track)*
+# Deep Coded Wavefront Sensing (Deep CWFS): Bridging the Simulation–Experiment Gap
 
 ---
 
